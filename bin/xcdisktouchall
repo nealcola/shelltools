@@ -1,0 +1,27 @@
+#!/bin/bash
+# Author : LJ
+# Date   : 2021/09/22
+# Func   : 验证磁盘是否可以写。
+if [ $# -lt 1 ]
+then
+        echo "参数不足，请重新执行..."
+        echo "此脚本传参使用方法：$0 第一个参数为待查询的ip和磁盘名称对应列表文件名"
+        exit ;
+fi
+
+list_tmp=$1
+arr_ip=`cat $list_tmp|awk '{print $1}'`
+arr_disk_dir=`cat $list_tmp|awk '{print $NF}'`
+for ip in ${arr_ip[@]} ; do
+        arr_disk_dir=`grep -w $ip $list_tmp|awk '{print $NF}'`
+        for disk_dir in ${arr_disk_dir[@]} ; do
+                sudo ssh $ip -C "cd /$disk_dir;touch 1"
+                if [ $? -eq 0 ] ; then
+                        echo -e "\033[1;32m 主机 $ip\t$disk_dir\t数据盘可以正常写 \033[0m"
+                        sudo ssh $ip -C "cd /$disk_dir;rm -f 1"
+                elif [ $? -eq 1 ] ; then
+                        echo -e "\033[1;31m 主机 ${ip}\t${disk_dir}\t数据盘不能正常写入 \033[0m"
+                fi
+        done
+done
+

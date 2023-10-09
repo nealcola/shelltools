@@ -1,0 +1,25 @@
+#!/bin/bash
+# Author : LJ
+# Date   : 2021/09/22
+# Func   : 查看目录正在被那些进程占用。
+if [ $# -lt 1 ]
+then
+        echo "参数不足，请重新执行..."
+        echo "此脚本传参使用方法：$0 第一个参数为待查询的ip和磁盘名称对应列表文件名"
+        exit ;
+fi
+
+list_tmp=$1
+arr_ip=`cat $list_tmp|awk '{print $1}'`
+arr_disk_dir=`cat $list_tmp|awk '{print $NF}'`
+for ip in ${arr_ip[@]} ; do
+	arr_disk_dir=`grep -w $ip $list_tmp|awk '{print $NF}'`
+	for disk_dir in ${arr_disk_dir[@]} ; do
+		lsof_num=`sudo ssh $ip "lsof -n /$disk_dir|wc -l"`
+		if [ "${lsof_num}" -eq 0 ] ; then
+			echo -e "\033[1;32m 主机 $ip\t$disk_dir\t数据盘无活跃进程 \033[0m"
+		elif [ "${lsof_num}" -gt 0 ] ; then
+			echo -e "\033[1;31m 主机 ${ip}\t${disk_dir}\t数据盘有 ${lsof_num} 个活跃进程 \033[0m"
+		fi
+	done
+done

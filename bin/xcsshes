@@ -1,0 +1,31 @@
+#!/bin/bash
+# Author : LJ
+# Date   : 2022/3/31
+# Func   : 批量查询一批机器是否可以免密登陆,输出结果和xcssh有所不同，本脚本只输出ssh无法登陆的ip列表。
+
+#if [ $# -lt 1 ]
+#then
+#	echo -e "\033[1;31m 参数不足，请重新执行... \033[0m"
+#	echo -e "\033[1;32m 此脚本传参使用方法：$0 第一个参数为待查询的ip列表文件名 \033[0m"
+#	exit ;
+#fi
+
+#本脚本可以指定需要清理的ip列表，可以将ip列表放在文件中，传参给本脚本。如果无参数，默认从bdms取ip列表。
+if [[ $# -eq 1 ]]; then
+	list_ip=`cd ${workdir};cat $1`
+else
+	list_ip=`curl -s 'http://bdms.cnsuning.com/analyze/design/data-interface/restful/api/v1/run-path/mysql_1/cmdb/openapi/getElasticsearch' | jq -r '.data.data[]|.server_ip'`
+fi
+workdir=`pwd`
+sum=`echo "${list_ip}"|wc -l`
+num=1
+
+echo -e "\033[1;32m检查 $0 文件 $sum 个ip中有以下机器无法从跳板机免密登陆: \033[0m"
+for ip in ${list_ip[@]} ; do
+sudo ssh -o PasswordAuthentication=no -o StrictHostKeyChecking=no -o ConnectTimeout=1 $ip "ls -l /|wc -l" >/dev/null 2>&1
+        if [ $? -ne 0 ];then
+		#echo -e "\033[1;31m$num\033[1;32m/$sum	$ip节点ssh免密登陆为:\033[1;33m	no \033[0m"
+		echo -e "\033[1;31m$ip\033[0m"
+		let num++
+        fi
+done

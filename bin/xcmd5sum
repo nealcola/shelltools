@@ -1,0 +1,37 @@
+#!/bin/sh
+if [ $# -lt 3 ]
+then
+        echo -e "\033[1;31m 参数不足，请重新执行... \033[0m"
+        echo -e "\033[1;32m 此脚本传参使用方法：$0 第一个参数为待查询的ip列表文件名 第二个参数为md5标准值 第三个参数为目标文件绝对路径 \033[0m"
+        exit ;
+fi
+workdir=`pwd`
+
+list_tmp=$1
+md5sum_tmp=$2
+dir_name=$3
+
+sum=`cat $list|sed '/^$/d'|wc -l`
+num=1
+md5num_error=0
+
+arr_server_ip=(`cat ${list_tmp}`)
+for server_ip in ${arr_server_ip[@]} ; do
+	#echo -e "\033[1;31m$num\033[1;32m/$sum	 =============== $ip 节点 标准MD5值为：${md5sum_tmp} 文件：${dir_name} =============== \033[0m"
+	md5sum=`sudo ssh $server_ip "md5sum $dir_name"|awk '{print $1}'`
+	#echo $md5sum
+        if [ "$md5sum" != "$md5sum_tmp" ] ; then
+		if [ "${md5num_error}" -ne 0 ] ; then
+			echo -e "\033[1;31m$num 个节点中有如下IP md5值不一致 =============== \033[0m"
+		fi
+		echo $server_ip
+		let md5num_error++
+#                echo $server_ip
+#               echo "错误md5sum值 $md5sum"
+#               echo "md5sum_tmp$md5sum_tmp"
+        fi
+
+	let num++
+done
+
+
